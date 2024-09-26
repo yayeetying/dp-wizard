@@ -1,0 +1,37 @@
+# After making changes here, run:
+#    pip-compile requirements-dev.in && pip install -r requirements-dev.txt
+
+# Developer tools:
+pip-tools
+flit
+black
+flake8
+flake8-bugbear
+pre-commit
+
+# Testing:
+pytest
+pytest-playwright
+mypy
+coverage
+
+
+
+# Everything below should also be listed in pyproject.toml:
+
+# OpenDP:
+opendp[polars]
+# For Python 3.9:
+scipy<1.14
+
+# Conversion:
+jupytext
+jupyter-client
+nbconvert
+ipykernel
+# May also require:
+# python -m ipykernel install --name kernel_name --user
+
+# Shiny:
+shiny
+shinywidgets

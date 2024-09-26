@@ -1,0 +1,4 @@
+IMPORTS_BLOCK
+
+CONTEXT_BLOCK
+print(context)
