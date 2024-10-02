@@ -6,8 +6,8 @@ from dp_creator_ii.converters import convert_py_to_nb
 
 def results_ui():
     return ui.nav_panel(
-        "Download Results",
-        "TODO: Download Results",
+        "Download results",
+        "TODO: Download results",
         ui.download_button("download_script", "Download script"),
         # TODO: Notebook code is badly formatted
         # ui.download_button(

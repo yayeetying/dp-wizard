@@ -1,6 +1,8 @@
-from pathlib import Path
-import json
+from sys import argv
+
 from shiny import ui, reactive, render
+
+from dp_creator_ii import get_arg_parser
 
 
 def dataset_ui():
@@ -9,18 +11,23 @@ def dataset_ui():
         "TODO: Pick dataset",
         ui.output_text("csv_path_text"),
         ui.output_text("unit_of_privacy_text"),
-        ui.input_action_button("go_to_analysis", "Perform analysis"),
+        ui.input_action_button("go_to_analysis", "Define analysis"),
         value="dataset_panel",
     )
 
 
 def dataset_server(input, output, session):
-    config_path = Path(__file__).parent / "config.json"
-    config = json.loads(config_path.read_text())
-    config_path.unlink()
+    if argv[1:3] == ["run", "--port"]:
+        # Started by playwright
+        arg_csv_path = None
+        arg_unit_of_privacy = None
+    else:
+        args = get_arg_parser().parse_args()
+        arg_csv_path = args.csv_path
+        arg_unit_of_privacy = args.unit_of_privacy
 
-    csv_path = reactive.value(config["csv_path"])
-    unit_of_privacy = reactive.value(config["unit_of_privacy"])
+    csv_path = reactive.value(arg_csv_path)
+    unit_of_privacy = reactive.value(arg_unit_of_privacy)
 
     @render.text
     def csv_path_text():
