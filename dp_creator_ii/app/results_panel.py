@@ -9,13 +9,7 @@ def results_ui():
         "Download results",
         "TODO: Download results",
         ui.download_button("download_script", "Download script"),
-        # TODO: Notebook code is badly formatted
-        # ui.download_button(
-        #     "download_notebook_unexecuted", "Download notebook (unexecuted)"
-        # ),
-        # ui.download_button(
-        #     "download_notebook_executed", "Download notebook (executed)"
-        # )
+        ui.download_button("download_notebook_unexecuted", "Download notebook"),
         value="results_panel",
     )
 
