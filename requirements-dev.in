@@ -34,3 +34,6 @@ ipykernel
 
 # Shiny:
 shiny
+
+# Visualization:
+matplotlib
