@@ -29,6 +29,10 @@ def dataset_ui():
         "CSV path from either CLI or UI:",
         ui.output_text("csv_path"),
         "CSV fields:",
+        ui.markdown(
+            "How many rows of the CSV can one individual contribute to? "
+            'This is the "unit of privacy" which will be protected.'
+        ),
         ui.output_text("csv_fields"),
         ui.input_numeric("contributions", "Contributions", args.contributions),
         output_code_sample("unit_of_privacy_python"),

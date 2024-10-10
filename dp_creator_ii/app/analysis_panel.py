@@ -7,7 +7,30 @@ from dp_creator_ii.app.plots import plot_error_bars_with_cutoff
 def analysis_ui():
     return ui.nav_panel(
         "Define Analysis",
-        "TODO: Define analysis",
+        ui.markdown(
+            "Select numeric columns of interest in *TODO*, "
+            "and for each numeric column indicate the expected range, "
+            "the number of bins for the histogram, "
+            "and its relative share of the privacy budget."
+        ),
+        ui.markdown(
+            "[TODO: Column selection]"
+            "(https://github.com/opendp/dp-creator-ii/issues/33)"
+        ),
+        ui.markdown(
+            "What is your privacy budget for this release? "
+            "Values above 1 will add less noise to the data, "
+            "but have greater risk of revealing individual data."
+        ),
+        ui.markdown(
+            "[TODO: Logarithmic slider]"
+            "(https://github.com/opendp/dp-creator-ii/issues/25)"
+        ),
+        ui.markdown(
+            "## Preview\n"
+            "These plots assume a normal distribution for the columns you've selected, "
+            "and demonstrate the effect of different parameter choices."
+        ),
         ui.output_plot("plot_preview"),
         "(This plot is only to demonstrate that plotting works.)",
         ui.input_action_button("go_to_results", "Download results"),
