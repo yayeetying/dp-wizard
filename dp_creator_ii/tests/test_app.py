@@ -10,7 +10,7 @@ app = create_app_fixture("../app/__init__.py")
 
 # TODO: Why is incomplete coverage reported here?
 # https://github.com/opendp/dp-creator-ii/issues/18
-def test_app(page: Page, app: ShinyAppProc):  # pragma: no cover
+def test_navigation(page: Page, app: ShinyAppProc):  # pragma: no cover
     pick_dataset_text = "TODO: Pick dataset"
     perform_analysis_text = "TODO: Define analysis"
     download_results_text = "TODO: Download results"
@@ -29,6 +29,9 @@ def test_app(page: Page, app: ShinyAppProc):  # pragma: no cover
     expect_visible(pick_dataset_text)
     expect_not_visible(perform_analysis_text)
     expect_not_visible(download_results_text)
+    page.get_by_label("Contributions").fill("42")
+    page.get_by_text("Code sample").click()
+    expect_visible("dp.unit_of(contributions=42)")
     expect_no_error()
 
     csv_path = Path(__file__).parent / "fixtures" / "fake.csv"
@@ -54,4 +57,4 @@ def test_app(page: Page, app: ShinyAppProc):  # pragma: no cover
 
     download = download_info.value
     script = download.path().read_text()
-    assert "privacy_unit=dp.unit_of(contributions=1)" in script
+    assert "privacy_unit = dp.unit_of(contributions=42)" in script
