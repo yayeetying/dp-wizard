@@ -1,7 +1,7 @@
 from shiny import ui, render
 
-from dp_creator_ii.template import make_notebook_py, make_script_py
-from dp_creator_ii.converters import convert_py_to_nb
+from dp_creator_ii.utils.template import make_notebook_py, make_script_py
+from dp_creator_ii.utils.converters import convert_py_to_nb
 
 
 def results_ui():
@@ -29,7 +29,7 @@ def results_ui():
     )
 
 
-def results_server(input, output, session):
+def results_server(input, output, session):  # pragma: no cover
     @render.download(
         filename="dp-creator-script.py",
         media_type="text/x-python",

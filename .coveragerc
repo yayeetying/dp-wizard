@@ -3,11 +3,10 @@
 source = .
 
 omit =
-  # TODO
-  dp_creator_ii/app/*
+  tests/fixtures/*
 
 # More strict: Check transitions between lines, not just individual lines.
-# TODO: branch = True
+branch = True
 
 [report]
 show_missing = True

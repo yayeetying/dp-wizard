@@ -1,6 +1,8 @@
 import re
 from pathlib import Path
-from dp_creator_ii.converters import convert_py_to_nb
+import subprocess
+import pytest
+from dp_creator_ii.utils.converters import convert_py_to_nb
 
 
 def norm_nb(nb_str):
@@ -19,7 +21,7 @@ def norm_nb(nb_str):
 
 
 def test_convert_py_to_nb():
-    fixtures_path = Path("dp_creator_ii/tests/fixtures")
+    fixtures_path = Path(__file__).parent / "fixtures"
     python_str = (fixtures_path / "fake.py").read_text()
     actual_nb_str = convert_py_to_nb(python_str)
     expected_nb_str = (fixtures_path / "fake.ipynb").read_text()
@@ -30,7 +32,7 @@ def test_convert_py_to_nb():
 
 
 def test_convert_py_to_nb_execute():
-    fixtures_path = Path("dp_creator_ii/tests/fixtures")
+    fixtures_path = Path(__file__).parent / "fixtures"
     python_str = (fixtures_path / "fake.py").read_text()
     actual_nb_str = convert_py_to_nb(python_str, execute=True)
     expected_nb_str = (fixtures_path / "fake-executed.ipynb").read_text()
@@ -38,3 +40,9 @@ def test_convert_py_to_nb_execute():
     normed_actual_nb_str = norm_nb(actual_nb_str)
     normed_expected_nb_str = norm_nb(expected_nb_str)
     assert normed_actual_nb_str == normed_expected_nb_str
+
+
+def test_convert_py_to_nb_error():
+    python_str = "Invalid python!"
+    with pytest.raises(subprocess.CalledProcessError):
+        convert_py_to_nb(python_str, execute=True)

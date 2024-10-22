@@ -3,7 +3,7 @@ from argparse import ArgumentTypeError
 
 import pytest
 
-from dp_creator_ii.argparse_helpers import _get_arg_parser, _existing_csv_type
+from dp_creator_ii.utils.argparse_helpers import _get_arg_parser, _existing_csv_type
 
 
 def test_help():
@@ -19,7 +19,7 @@ def test_help():
     )
     print(help)
 
-    readme_md = (Path(__file__).parent.parent.parent / "README.md").read_text()
+    readme_md = (Path(__file__).parent.parent / "README.md").read_text()
     assert help in readme_md
 
 
