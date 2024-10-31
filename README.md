@@ -51,8 +51,7 @@ Your browser should open and connect you to the application.
 
 Tests should pass, and code coverage should be complete (except blocks we explicitly ignore):
 ```shell
-$ coverage run -m pytest -v
-$ coverage report
+$ ./ci.sh
 ```
 
 We're using [Playwright](https://playwright.dev/python/) for end-to-end tests. You can use it to [generate test code](https://playwright.dev/python/docs/codegen-intro) just by interacting with the app in a browser:
@@ -63,8 +62,14 @@ $ playwright codegen http://127.0.0.1:8000/
 
 You can also [step through these tests](https://playwright.dev/python/docs/running-tests#debugging-tests) and see what the browser sees:
 ```shell
-$ PWDEBUG=1 pytest
+$ PWDEBUG=1 pytest -k test_app
 ```
+
+If Playwright fails in CI, we can still see what went wrong:
+- Scroll to the end of the CI log, to `actions/upload-artifact`.
+- Download the zipped artifact locally.
+- Inside the zipped artifact will be _another_ zip: `trace.zip`.
+- Don't unzip it! Instead, open it with [trace.playwright.dev](https://trace.playwright.dev/).
 
 ### Conventions
 
