@@ -38,7 +38,9 @@ jobs:
         run: pip install -r requirements-dev.txt
 
       - name: Install browsers
-        run: playwright install
+        # Install just one browser instead of the default three.
+        # https://playwright.dev/python/docs/browsers#managing-browser-binaries
+        run: playwright install chromium
 
       - name: Test
         run: ./ci.sh
