@@ -1,11 +1,10 @@
 from math import pow
 
-from shiny import ui, reactive, render
+from shiny import ui, reactive, render, req
 
 from dp_creator_ii.app.components.inputs import log_slider
 from dp_creator_ii.app.components.column_module import column_ui, column_server
 from dp_creator_ii.utils.csv_helper import read_field_names
-from dp_creator_ii.utils.argparse_helpers import get_csv_contrib
 from dp_creator_ii.app.components.outputs import output_code_sample
 from dp_creator_ii.utils.templates import make_privacy_loss_block
 
@@ -34,10 +33,15 @@ def analysis_ui():
     )
 
 
-def analysis_server(input, output, session):  # pragma: no cover
-    (csv_path, contributions) = get_csv_contrib()
+def analysis_server(
+    input,
+    output,
+    session,
+    csv_path=None,
+    contributions=None,
+    is_demo=None,
+):  # pragma: no cover
 
-    csv_path_from_cli_value = reactive.value(csv_path)
     weights = reactive.value({})
 
     def set_column_weight(column_id, weight):
@@ -74,7 +78,7 @@ def analysis_server(input, output, session):  # pragma: no cover
             column_server(
                 column_id,
                 name=column_id,
-                contributions=contributions,
+                contributions=contributions(),
                 epsilon=epsilon_calc(),
                 set_column_weight=set_column_weight,
                 get_weights_sum=get_weights_sum,
@@ -88,22 +92,8 @@ def analysis_server(input, output, session):  # pragma: no cover
         ]
 
     @reactive.calc
-    def csv_path_calc():
-        csv_path_from_ui = input.csv_path_from_ui()
-        if csv_path_from_ui is not None:
-            return csv_path_from_ui[0]["datapath"]
-        return csv_path_from_cli_value.get()
-
-    @render.text
-    def csv_path():
-        return csv_path_calc()
-
-    @reactive.calc
     def csv_fields_calc():
-        path = csv_path_calc()
-        if path is None:
-            return None
-        return read_field_names(path)
+        return read_field_names(req(csv_path()))
 
     @render.text
     def csv_fields():

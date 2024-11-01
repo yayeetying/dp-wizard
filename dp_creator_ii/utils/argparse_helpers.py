@@ -67,7 +67,7 @@ def _clip(n, lower, upper):
 
 def _get_demo_csv_contrib():
     """
-    >>> csv_path, contributions = _get_demo_csv_contrib()
+    >>> csv_path, contributions, is_demo = _get_demo_csv_contrib()
     >>> with open(csv_path, newline="") as csv_handle:
     ...     reader = csv.DictReader(csv_handle)
     ...     reader.fieldnames
@@ -102,13 +102,13 @@ def _get_demo_csv_contrib():
                     }
                 )
 
-    return csv_path, contributions
+    return (csv_path, contributions, True)
 
 
-def get_csv_contrib():  # pragma: no cover
+def get_csv_contrib_from_cli():  # pragma: no cover
     args = _get_args()
     if args.demo:
         if args.csv_path is not None:
             warn('"--demo" overrides "--csv" and "--contrib"')
         return _get_demo_csv_contrib()
-    return (args.csv_path, args.contributions)
+    return (args.csv_path, args.contributions, False)
