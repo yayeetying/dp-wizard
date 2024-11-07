@@ -25,4 +25,5 @@ def plot_histogram(histogram_df, error, cutoff):  # pragma: no cover
     axes.set_xticks(majors, majors)
     axes.set_xticks(minors, ["" for _ in minors], minor=True)
     axes.axhline(cutoff, color="lightgrey", zorder=-1)
+    axes.set_ylim(bottom=0)
     # TODO: Since this seems to return None, how does the information flow?
