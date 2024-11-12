@@ -8,26 +8,31 @@ from dp_creator_ii.utils.templates import make_column_config_block
 from dp_creator_ii.app.components.outputs import output_code_sample, demo_tooltip
 
 
+default_weight = 2
+
+
 @module.ui
 def column_ui():  # pragma: no cover
     width = "10em"  # Just wide enough so the text isn't trucated.
     return ui.layout_columns(
         [
+            # The default values on these inputs
+            # should be overridden by the reactive.effect.
             ui.output_ui("bounds_tooltip_ui"),
-            ui.input_numeric("min", "Min", 0, width=width),
-            ui.input_numeric("max", "Max", 10, width=width),
+            ui.input_numeric("lower", "Lower", 0, width=width),
+            ui.input_numeric("upper", "Upper", 0, width=width),
             ui.output_ui("bins_tooltip_ui"),
-            ui.input_numeric("bins", "Bins", 10, width=width),
+            ui.input_numeric("bins", "Bins", 0, width=width),
             ui.output_ui("weight_tooltip_ui"),
             ui.input_select(
                 "weight",
                 "Weight",
                 choices={
                     1: "Less accurate",
-                    2: "Default",
+                    default_weight: "Default",
                     4: "More accurate",
                 },
-                selected=2,
+                selected=default_weight,
                 width=width,
             ),
         ],
@@ -36,7 +41,7 @@ def column_ui():  # pragma: no cover
             # https://github.com/opendp/dp-creator-ii/issues/138
             ui.markdown(
                 "This simulation assumes a normal distribution "
-                "between the specified min and max. "
+                "between the specified lower and upper bounds. "
                 "Your data file has not been read except to determine the columns."
             ),
             ui.output_plot("column_plot", height="300px"),
@@ -61,23 +66,39 @@ def column_server(
     name,
     contributions,
     epsilon,
-    set_column_weight,
-    get_weights_sum,
+    lower_bounds,
+    upper_bounds,
+    bin_counts,
+    weights,
     is_demo,
 ):  # pragma: no cover
     @reactive.effect
-    @reactive.event(input.weight)
-    def _():
-        set_column_weight(name, float(input.weight()))
+    def _set_all_inputs():
+        with reactive.isolate():  # Without isolate, there is an infinite loop.
+            ui.update_numeric("lower", value=lower_bounds().get(name, 0))
+            ui.update_numeric("upper", value=upper_bounds().get(name, 10))
+            ui.update_numeric("bins", value=bin_counts().get(name, 10))
+            ui.update_numeric("weight", value=weights().get(name, default_weight))
 
-    @reactive.calc
-    def column_config():
-        return {
-            "min": input.min(),
-            "max": input.max(),
-            "bins": input.bins(),
-            "weight": float(input.weight()),
-        }
+    @reactive.effect
+    @reactive.event(input.lower)
+    def _set_lower():
+        lower_bounds.set({**lower_bounds(), name: float(input.lower())})
+
+    @reactive.effect
+    @reactive.event(input.upper)
+    def _set_upper():
+        upper_bounds.set({**upper_bounds(), name: float(input.upper())})
+
+    @reactive.effect
+    @reactive.event(input.bins)
+    def _set_bins():
+        bin_counts.set({**bin_counts(), name: float(input.bins())})
+
+    @reactive.effect
+    @reactive.event(input.weight)
+    def _set_weight():
+        weights.set({**weights(), name: float(input.weight())})
 
     @render.ui
     def bounds_tooltip_ui():
@@ -119,30 +140,28 @@ def column_server(
 
     @render.code
     def column_code():
-        config = column_config()
         return make_column_config_block(
             name=name,
-            min_value=config["min"],
-            max_value=config["max"],
-            bin_count=config["bins"],
+            lower_bound=float(input.lower()),
+            upper_bound=float(input.upper()),
+            bin_count=int(input.bins()),
         )
 
     @render.plot()
     def column_plot():
-        config = column_config()
-        min_x = config["min"]
-        max_x = config["max"]
-        bin_count = config["bins"]
-        weight = config["weight"]
-        weights_sum = get_weights_sum()
+        lower_x = float(input.lower())
+        upper_x = float(input.upper())
+        bin_count = int(input.bins())
+        weight = float(input.weight())
+        weights_sum = sum(weights().values())
         info(f"Weight ratio for {name}: {weight}/{weights_sum}")
         if weights_sum == 0:
             # This function is triggered when column is removed;
             # Exit early to avoid divide-by-zero.
             return None
         _confidence, accuracy, histogram = make_confidence_accuracy_histogram(
-            lower=min_x,
-            upper=max_x,
+            lower=lower_x,
+            upper=upper_x,
             bin_count=bin_count,
             contributions=contributions,
             weighted_epsilon=epsilon * weight / weights_sum,
