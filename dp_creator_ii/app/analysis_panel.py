@@ -7,6 +7,7 @@ from dp_creator_ii.app.components.column_module import column_ui, column_server
 from dp_creator_ii.utils.csv_helper import read_csv_ids_labels, read_csv_ids_names
 from dp_creator_ii.app.components.outputs import output_code_sample, demo_tooltip
 from dp_creator_ii.utils.templates import make_privacy_loss_block
+from dp_creator_ii.app.components.column_module import col_widths
 
 
 def analysis_ui():
@@ -18,8 +19,11 @@ def analysis_ui():
             "the number of bins for the histogram, "
             "and its relative share of the privacy budget."
         ),
-        ui.output_ui("columns_checkbox_group_tooltip_ui"),
-        ui.input_checkbox_group("columns_checkbox_group", None, []),
+        ui.input_checkbox_group(
+            "columns_checkbox_group",
+            ["Columns", ui.output_ui("columns_checkbox_group_tooltip_ui")],
+            [],
+        ),
         ui.output_ui("columns_ui"),
         ui.markdown(
             "What is your privacy budget for this release? "
@@ -108,10 +112,33 @@ def analysis_server(
             )
         return [
             [
-                ui.h3(column_ids_to_labels[column_id]),
-                column_ui(column_id),
-            ]
-            for column_id in column_ids
+                [
+                    ui.h3(column_ids_to_labels[column_id]),
+                    column_ui(column_id),
+                ]
+                for column_id in column_ids
+            ],
+            [
+                (
+                    ui.layout_columns(
+                        [],
+                        [
+                            ui.markdown(
+                                """
+                            This simulation assumes a normal
+                            distribution between the specified
+                            lower and upper bounds. Your data
+                            file has not been read except to
+                            determine the columns.
+                            """
+                            )
+                        ],
+                        col_widths=col_widths,
+                    )
+                    if column_ids
+                    else []
+                )
+            ],
         ]
 
     @reactive.calc
