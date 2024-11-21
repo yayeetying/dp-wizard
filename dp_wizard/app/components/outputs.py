@@ -17,3 +17,8 @@ def demo_tooltip(is_demo: bool, text: str):  # pragma: no cover
             text,
             placement="right",
         )
+
+
+def hide_if(condition: bool, el):  # pragma: no cover
+    display = "none" if condition else "block"
+    return ui.div(el, style=f"display: {display};")

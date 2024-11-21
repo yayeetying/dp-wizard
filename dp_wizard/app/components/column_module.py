@@ -5,11 +5,11 @@ from shiny import ui, render, module, reactive, Inputs, Outputs, Session
 from dp_wizard.utils.dp_helper import make_accuracy_histogram
 from dp_wizard.utils.shared import plot_histogram
 from dp_wizard.utils.code_generators import make_column_config_block
-from dp_wizard.app.components.outputs import output_code_sample, demo_tooltip
+from dp_wizard.app.components.outputs import output_code_sample, demo_tooltip, hide_if
 
 
 default_weight = "2"
-
+label_width = "10em"  # Just wide enough so the text isn't trucated.
 col_widths = {
     # Controls stay roughly a constant width;
     # Graph expands to fill space.
@@ -21,29 +21,21 @@ col_widths = {
 
 @module.ui
 def column_ui():  # pragma: no cover
-    width = "10em"  # Just wide enough so the text isn't trucated.
     return ui.layout_columns(
         [
             # The initial values on these inputs
             # should be overridden by the reactive.effect.
             ui.input_numeric(
-                "lower", ["Lower", ui.output_ui("bounds_tooltip_ui")], 0, width=width
+                "lower",
+                ["Lower", ui.output_ui("bounds_tooltip_ui")],
+                0,
+                width=label_width,
             ),
-            ui.input_numeric("upper", "Upper", 0, width=width),
+            ui.input_numeric("upper", "Upper", 0, width=label_width),
             ui.input_numeric(
-                "bins", ["Bins", ui.output_ui("bins_tooltip_ui")], 0, width=width
+                "bins", ["Bins", ui.output_ui("bins_tooltip_ui")], 0, width=label_width
             ),
-            ui.input_select(
-                "weight",
-                ["Weight", ui.output_ui("weight_tooltip_ui")],
-                choices={
-                    "1": "Less accurate",
-                    default_weight: "Default",
-                    "4": "More accurate",
-                },
-                selected=default_weight,
-                width=width,
-            ),
+            ui.output_ui("optional_weight_ui"),
         ],
         [
             ui.output_plot("column_plot", height="300px"),
@@ -67,6 +59,7 @@ def column_server(
     bin_counts: reactive.Value[dict[str, int]],
     weights: reactive.Value[dict[str, str]],
     is_demo: bool,
+    is_single_column: bool,
 ):  # pragma: no cover
     @reactive.effect
     def _set_all_inputs():
@@ -121,6 +114,23 @@ def column_server(
             the same overall privacy guarantee. For this example, give
             "class_year" 4 bins and "grade" 5 bins.
             """,
+        )
+
+    @render.ui
+    def optional_weight_ui():
+        return hide_if(
+            is_single_column,
+            ui.input_select(
+                "weight",
+                ["Weight", ui.output_ui("weight_tooltip_ui")],
+                choices={
+                    "1": "Less accurate",
+                    default_weight: "Default",
+                    "4": "More accurate",
+                },
+                selected=default_weight,
+                width=label_width,
+            ),
         )
 
     @render.ui
