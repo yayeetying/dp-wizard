@@ -1,11 +1,14 @@
 from logging import info
 
+from htmltools.tags import details, summary
 from shiny import ui, render, module, reactive, Inputs, Outputs, Session
+from shiny.types import SilentException
 
 from dp_wizard.utils.dp_helper import make_accuracy_histogram
 from dp_wizard.utils.shared import plot_histogram
 from dp_wizard.utils.code_generators import make_column_config_block
 from dp_wizard.app.components.outputs import output_code_sample, demo_tooltip, hide_if
+from dp_wizard.utils.dp_helper import confidence
 
 
 default_weight = "2"
@@ -42,12 +45,7 @@ def column_ui():  # pragma: no cover
                 ),
                 ui.output_ui("optional_weight_ui"),
             ],
-            [
-                ui.output_plot("column_plot", height="300px"),
-                # Make plot smaller than default:
-                # about the same size as the other column.
-                output_code_sample("Column Definition", "column_code"),
-            ],
+            ui.output_ui("histogram_preview_ui"),
             col_widths=col_widths,  # type: ignore
         ),
     )
@@ -96,6 +94,27 @@ def column_server(
     @reactive.event(input.weight)
     def _set_weight():
         weights.set({**weights(), name: input.weight()})
+
+    @reactive.calc()
+    def accuracy_histogram():
+        lower_x = float(input.lower())
+        upper_x = float(input.upper())
+        bin_count = int(input.bins())
+        weight = float(input.weight())
+        weights_sum = sum(float(weight) for weight in weights().values())
+        info(f"Weight ratio for {name}: {weight}/{weights_sum}")
+        if weights_sum == 0:
+            # This function is triggered when column is removed;
+            # Exit early to avoid divide-by-zero.
+            raise SilentException("weights_sum == 0")
+        return make_accuracy_histogram(
+            row_count=row_count,
+            lower=lower_x,
+            upper=upper_x,
+            bin_count=bin_count,
+            contributions=contributions,
+            weighted_epsilon=epsilon * weight / weights_sum,
+        )
 
     @render.text
     def card_header():
@@ -165,26 +184,31 @@ def column_server(
             bin_count=int(input.bins()),
         )
 
-    @render.plot()
-    def column_plot():
-        lower_x = float(input.lower())
-        upper_x = float(input.upper())
-        bin_count = int(input.bins())
-        weight = float(input.weight())
-        weights_sum = sum(float(weight) for weight in weights().values())
-        info(f"Weight ratio for {name}: {weight}/{weights_sum}")
-        if weights_sum == 0:
-            # This function is triggered when column is removed;
-            # Exit early to avoid divide-by-zero.
-            return None
-        accuracy, histogram = make_accuracy_histogram(
-            row_count=row_count,
-            lower=lower_x,
-            upper=upper_x,
-            bin_count=bin_count,
-            contributions=contributions,
-            weighted_epsilon=epsilon * weight / weights_sum,
-        )
+    @render.ui
+    def histogram_preview_ui():
+        accuracy, histogram = accuracy_histogram()
+        return [
+            ui.output_plot("histogram_preview_plot", height="300px"),
+            ui.layout_columns(
+                ui.markdown(
+                    f"The {confidence:.0%} confidence interval is ±{accuracy:.3g}."
+                ),
+                details(
+                    summary("Data Table"),
+                    ui.output_data_frame("data_frame"),
+                ),
+                output_code_sample("Column Definition", "column_code"),
+            ),
+        ]
+
+    @render.data_frame
+    def data_frame():
+        accuracy, histogram = accuracy_histogram()
+        return render.DataGrid(histogram)
+
+    @render.plot
+    def histogram_preview_plot():
+        accuracy, histogram = accuracy_histogram()
         s = "s" if contributions > 1 else ""
         title = (
             f"Simulated {name}: normal distribution, "
