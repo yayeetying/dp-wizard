@@ -66,11 +66,14 @@ Choose both **Public CSV** and **Private CSV** {PUBLIC_PRIVATE_TEXT}"""
                 "How many rows of the CSV can one individual contribute to? "
                 'This is the "unit of privacy" which will be protected.'
             ),
-            ui.input_numeric(
-                "contributions",
-                ["Contributions", ui.output_ui("contributions_demo_tooltip_ui")],
-                cli_info.contributions,
-                min=1,
+            ui.row(
+                ui.input_numeric(
+                    "contributions",
+                    ["Contributions", ui.output_ui("contributions_demo_tooltip_ui")],
+                    cli_info.contributions,
+                    min=1,
+                ),
+                ui.output_ui("contributions_validation_ui"),
             ),
             ui.output_ui("python_tooltip_ui"),
             output_code_sample("Unit of Privacy", "unit_of_privacy_python"),
@@ -163,6 +166,18 @@ def dataset_server(
             f"can occur at most {contributions()} times in the dataset. ",
         )
 
+    @reactive.calc
+    def contributions_valid():
+        contributions = input.contributions()
+        return isinstance(contributions, int) and contributions >= 1
+
+    @render.ui
+    def contributions_validation_ui():
+        return hide_if(
+            contributions_valid(),
+            info_box(ui.markdown("Contributions must be 1 or greater.")),
+        )
+
     @render.ui
     def python_tooltip_ui():
         return demo_tooltip(
@@ -178,7 +193,7 @@ def dataset_server(
         button = ui.input_action_button(
             "go_to_analysis", "Define analysis", disabled=not button_enabled()
         )
-        if button_enabled():
+        if button_enabled() and contributions_valid():
             return button
         return [
             button,
