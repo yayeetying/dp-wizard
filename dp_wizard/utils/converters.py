@@ -2,6 +2,8 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 import subprocess
 import json
+import nbformat
+import nbconvert
 from warnings import warn
 
 
@@ -16,8 +18,8 @@ def convert_py_to_nb(python_str: str, execute: bool = False):
         py_path = temp_dir_path / "input.py"
         py_path.write_text(python_str)
 
-        # DEBUG:
-        Path("/tmp/script.py").write_text(python_str)
+        # for debugging:
+        # Path("/tmp/script.py").write_text(python_str)
 
         argv = (
             [
@@ -51,10 +53,10 @@ def convert_py_to_nb(python_str: str, execute: bool = False):
 
         if result.stderr:
             warn(f'STDERR from "{cmd}":\n{result.stderr}')  # pragma: no cover
-        return result.stdout.strip()
+        return _strip_nb_coda(result.stdout.strip())
 
 
-def strip_nb_coda(nb_json: str):
+def _strip_nb_coda(nb_json: str):
     """
     Given a notebook as a string of JSON, remove the coda.
     (These produce reports that we do need,
@@ -68,3 +70,19 @@ def strip_nb_coda(nb_json: str):
         new_cells.append(cell)
     nb["cells"] = new_cells
     return json.dumps(nb, indent=1)
+
+
+def convert_nb_to_html(python_nb: str):
+    notebook = nbformat.reads(python_nb, as_version=4)
+    exporter = nbconvert.HTMLExporter(template_name="classic")
+    (body, _resources) = exporter.from_notebook_node(notebook)
+    return body
+
+
+def convert_nb_to_pdf(python_nb: str):
+    notebook = nbformat.reads(python_nb, as_version=4)
+    # PDFExporter uses LaTeX as an intermediate representation.
+    # WebPDFExporter uses HTML.
+    exporter = nbconvert.WebPDFExporter(template_name="classic")
+    (body, _resources) = exporter.from_notebook_node(notebook)
+    return body
