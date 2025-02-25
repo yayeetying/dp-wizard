@@ -21,6 +21,7 @@ class AnalysisPlan(NamedTuple):
     csv_path: Optional[str]
     contributions: int
     epsilon: float
+    groups: list[str]
     columns: dict[str, AnalysisPlanColumn]
 
 
@@ -31,6 +32,7 @@ class _CodeGenerator(ABC):
         self.csv_path = analysis_plan.csv_path
         self.contributions = analysis_plan.contributions
         self.epsilon = analysis_plan.epsilon
+        self.groups = analysis_plan.groups
         self.columns = analysis_plan.columns
 
     @abstractmethod
@@ -38,6 +40,12 @@ class _CodeGenerator(ABC):
 
     def _make_extra_blocks(self):
         return {}
+
+    def _make_cell(self, block) -> str:
+        """
+        For the script generator, this is just a pass through.
+        """
+        return block
 
     def make_py(self):
         code = (
@@ -56,9 +64,10 @@ class _CodeGenerator(ABC):
         # Line length determined by PDF rendering.
         return black.format_str(code, mode=black.Mode(line_length=74))
 
-    def _make_margins_dict(self, bin_names: Iterable[str]):
+    def _make_margins_dict(self, bin_names: Iterable[str], groups: Iterable[str]):
+        groups_str = ", ".join(f"'{g}'" for g in groups)
         margins = ["(): dp.polars.Margin(public_info='lengths',),"] + [
-            f"('{bin_name}',): dp.polars.Margin(public_info='keys',),"
+            f"('{bin_name}', {groups_str}): dp.polars.Margin(public_info='keys',),"
             for bin_name in bin_names
         ]
 
@@ -76,62 +85,44 @@ class _CodeGenerator(ABC):
             for name, col in self.columns.items()
         )
 
-    def _make_pre(self) -> str:
-        """
-        If generating a notebook, this will open a new code paragraph.
-        """
-        return ""
-
-    def _make_post(self) -> str:
-        """
-        If generating a notebook, this will close a new code paragraph.
-        """
-        return ""
-
     def _make_confidence_note(self):
         return f"{int(confidence * 100)}% confidence interval"
 
     def _make_queries(self):
-        pre = self._make_pre()
-        post = self._make_post()
         column_names = self.columns.keys()
-        return (
-            f"{pre}confidence = {confidence} # {self._make_confidence_note()}\n{post}"
-            + "\n".join(
-                f"{pre}{self._make_query(column_name)}{post}"
-                for column_name in column_names
+        to_return = [
+            self._make_cell(
+                f"confidence = {confidence} # {self._make_confidence_note()}"
             )
-        )
+        ]
+        for column_name in column_names:
+            to_return.append(self._make_query(column_name))
+
+        return "\n".join(to_return)
 
     def _make_query(self, column_name):
         indentifier = name_to_identifier(column_name)
         accuracy_name = f"{indentifier}_accuracy"
         histogram_name = f"{indentifier}_histogram"
-        return (
+        query = (
             Template("query")
             .fill_values(
                 BIN_NAME=f"{indentifier}_bin",
+                GROUP_NAMES=self.groups,
             )
             .fill_expressions(
                 QUERY_NAME=f"{indentifier}_query",
                 ACCURACY_NAME=accuracy_name,
                 HISTOGRAM_NAME=histogram_name,
             )
-            .fill_blocks(
-                OUTPUT_BLOCK=self._make_output(
-                    column_name=column_name,
-                    accuracy_name=accuracy_name,
-                    histogram_name=histogram_name,
-                )
-            )
             .finish()
         )
 
-    def _make_output(self, column_name: str, accuracy_name: str, histogram_name: str):
-        return (
+        output = (
             Template(f"{self.root_template}_output")
             .fill_values(
                 COLUMN_NAME=column_name,
+                GROUP_NAMES=self.groups,
             )
             .fill_expressions(
                 ACCURACY_NAME=accuracy_name,
@@ -140,13 +131,20 @@ class _CodeGenerator(ABC):
             )
             .finish()
         )
+        return self._make_cell(query) + self._make_cell(output)
 
     def _make_partial_context(self):
         weights = [column.weight for column in self.columns.values()]
         column_names = [name_to_identifier(name) for name in self.columns.keys()]
+        group_names = [name_to_identifier(name) for name in self.groups]
+
         privacy_unit_block = make_privacy_unit_block(self.contributions)
         privacy_loss_block = make_privacy_loss_block(self.epsilon)
-        margins_dict = self._make_margins_dict([f"{name}_bin" for name in column_names])
+
+        margins_dict = self._make_margins_dict(
+            [f"{name}_bin" for name in column_names],
+            group_names,
+        )
         columns = ", ".join([f"{name}_config" for name in column_names])
         return (
             Template("context")
@@ -170,11 +168,8 @@ class NotebookGenerator(_CodeGenerator):
     def _make_context(self):
         return self._make_partial_context().fill_values(CSV_PATH=self.csv_path).finish()
 
-    def _make_pre(self):
-        return "# +\n"
-
-    def _make_post(self):
-        return "# -\n"
+    def _make_cell(self, block):
+        return f"\n# +\n{block}\n# -\n"
 
     def _make_extra_blocks(self):
         outputs_expression = (

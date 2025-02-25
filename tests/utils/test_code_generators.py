@@ -140,47 +140,50 @@ def test_fill_blocks_extra_slot_in_template():
         template.fill_blocks(SLOT="placeholder").finish()
 
 
-def test_make_notebook():
-    notebook = NotebookGenerator(
-        AnalysisPlan(
-            csv_path=fake_csv,
-            contributions=1,
-            epsilon=1,
-            columns={
-                # For a strong test, use a column whose name
-                # doesn't work as a python identifier.
-                "hw-number": AnalysisPlanColumn(
-                    lower_bound=5,
-                    upper_bound=15,
-                    bin_count=20,
-                    weight=4,
-                )
-            },
+def test_fill_blocks_not_string():
+    template = Template(None, template="SOMETHING")
+    with pytest.raises(
+        Exception,
+        match=r"For SOMETHING in template-instead-of-path, expected string, not 123",
+    ):
+        template.fill_blocks(SOMETHING=123).finish()
+
+
+def number_lines(text: str):
+    return "\n".join(
+        f"# {i}:\n{line}" if line and not i % 5 else line
+        for (i, line) in enumerate(text.splitlines())
+    )
+
+
+plan = AnalysisPlan(
+    csv_path=fake_csv,
+    contributions=1,
+    epsilon=1,
+    groups=["class year"],
+    columns={
+        # For a strong test, use a column whose name
+        # doesn't work as a python identifier.
+        "hw-number": AnalysisPlanColumn(
+            lower_bound=5,
+            upper_bound=15,
+            bin_count=20,
+            weight=4,
         )
-    ).make_py()
-    print(notebook)
+    },
+)
+
+
+def test_make_notebook():
+    notebook = NotebookGenerator(plan).make_py()
+    print(number_lines(notebook))
     globals = {}
     exec(notebook, globals)
     assert isinstance(globals["context"], dp.Context)
 
 
 def test_make_script():
-    script = ScriptGenerator(
-        AnalysisPlan(
-            csv_path=None,
-            contributions=1,
-            epsilon=1,
-            columns={
-                "hw-number": AnalysisPlanColumn(
-                    lower_bound=5,
-                    upper_bound=15,
-                    bin_count=20,
-                    weight=4,
-                )
-            },
-        )
-    ).make_py()
-    print(script)
+    script = ScriptGenerator(plan).make_py()
 
     # Make sure jupytext formatting doesn't bleed into the script.
     # https://jupytext.readthedocs.io/en/latest/formats-scripts.html#the-light-format
@@ -196,7 +199,7 @@ def test_make_script():
         )
         assert result.returncode == 0
         output = result.stdout.decode()
-        print(output)
+
         assert "DP counts for hw-number" in output
         assert "95% confidence interval 3.3" in output
         assert "hw_number_bin" in output
