@@ -30,7 +30,7 @@ def convert_py_to_nb(python_str: str, execute: bool = False):
         cmd = " ".join(argv)  # for error reporting
         try:
             result = subprocess.run(argv, check=True, text=True, capture_output=True)
-        except subprocess.CalledProcessError as e:
+        except subprocess.CalledProcessError as e:  # pragma: no cover
             if not execute:
                 # Might reach here if jupytext is not installed.
                 # Error quickly instead of trying to recover.
