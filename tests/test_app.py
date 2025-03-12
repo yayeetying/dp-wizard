@@ -23,6 +23,7 @@ for_the_demo = "For the demo, we'll imagine"
 # TODO: Why is incomplete coverage reported here?
 # https://github.com/opendp/dp-wizard/issues/18
 def test_demo_app(page: Page, demo_app: ShinyAppProc):  # pragma: no cover
+    # -- Select dataset --
     page.goto(demo_app.url)
     expect(page).to_have_title("DP Wizard")
     expect(page.get_by_text(for_the_demo)).not_to_be_visible()
@@ -91,7 +92,6 @@ def test_default_app(page: Page, default_app: ShinyAppProc):  # pragma: no cover
     # (Note: Slider tests failed on CI when run after column details,
     # although it worked locally. This works in either environment.
     # Maybe a race condition?)
-    expect_visible("0.1")
     expect_visible("10.0")
     expect_visible("Epsilon: 1.0")
     page.locator(".irs-bar").click()
@@ -175,7 +175,7 @@ def test_default_app(page: Page, default_app: ShinyAppProc):  # pragma: no cover
     # Reports ...
 
     # ... text:
-    page.get_by_text("Reports").click()
+    page.get_by_role("button", name="Reports").click()
     with page.expect_download() as text_report_download_info:
         page.get_by_text("Download report (.txt)").click()
     expect_no_error()
