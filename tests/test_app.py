@@ -20,10 +20,7 @@ tooltip = "#choose_csv_demo_tooltip_ui svg"
 for_the_demo = "For the demo, we'll imagine"
 
 
-# TODO: Why is incomplete coverage reported here?
-# https://github.com/opendp/dp-wizard/issues/18
 def test_demo_app(page: Page, demo_app: ShinyAppProc):  # pragma: no cover
-    # -- Select dataset --
     page.goto(demo_app.url)
     expect(page).to_have_title("DP Wizard")
     expect(page.get_by_text(for_the_demo)).not_to_be_visible()
@@ -35,7 +32,9 @@ def test_demo_app(page: Page, demo_app: ShinyAppProc):  # pragma: no cover
     expect(page.get_by_text("This simulation will assume")).to_be_visible()
 
 
-def test_default_app(page: Page, default_app: ShinyAppProc):  # pragma: no cover
+def test_default_app_validations(
+    page: Page, default_app: ShinyAppProc
+):  # pragma: no cover
     pick_dataset_text = "How many rows of the CSV"
     perform_analysis_text = "Select columns to calculate statistics on"
     download_results_text = "You can now make a differentially private release"
@@ -117,7 +116,9 @@ def test_default_app(page: Page, default_app: ShinyAppProc):  # pragma: no cover
     page.get_by_text("grade").nth(1).click()
 
     # Check that default is set correctly:
-    assert page.get_by_label("Upper").input_value() == "10"
+    # (Explicit "float()" because sometimes returns "10", sometimes "10.0".
+    #  Weird, but not something to spend time on.)
+    assert float(page.get_by_label("Upper").input_value()) == 10.0
     # Reset, and confirm:
     new_value = "20"
     page.get_by_label("Upper").fill(new_value)
@@ -136,16 +137,70 @@ def test_default_app(page: Page, default_app: ShinyAppProc):  # pragma: no cover
     # https://github.com/opendp/dp-wizard/issues/116
     expect_no_error()
 
+    # -- Feedback --
+    page.get_by_text("Feedback").click()
+    iframe = page.locator("#feedback-iframe")
+    expect(iframe).to_be_visible()
+    expect(iframe.content_frame.get_by_text("DP Wizard Feedback")).to_be_visible()
+    # Text comes from iframe, so this does introduce a dependency on an outside service.
+
+    # A separate test spends less time on parameter validation
+    # and instead exercises all downloads.
+    # Splitting the end-to-end tests minimizes the total time
+    # to run tests in parallel.
+
+
+def test_default_app_downloads(
+    page: Page, default_app: ShinyAppProc
+):  # pragma: no cover
+    pick_dataset_text = "How many rows of the CSV"
+    perform_analysis_text = "Select columns to calculate statistics on"
+    download_results_text = "You can now make a differentially private release"
+
+    def expect_visible(text):
+        expect(page.get_by_text(text)).to_be_visible()
+
+    def expect_not_visible(text):
+        expect(page.get_by_text(text)).not_to_be_visible()
+
+    def expect_no_error():
+        expect(page.locator(".shiny-output-error")).not_to_be_attached()
+
+    # -- Select dataset --
+    page.goto(default_app.url)
+    page.get_by_label("Contributions").fill("42")
+    csv_path = Path(__file__).parent / "fixtures" / "fake.csv"
+    page.get_by_label("Choose Public CSV").set_input_files(csv_path.resolve())
+
+    # -- Define analysis --
+    page.get_by_role("button", name="Define analysis").click()
+
+    # Pick grouping:
+    page.locator(".selectize-input").nth(0).click()
+    page.get_by_text("class year").nth(0).click()
+    # Pick columns:
+    page.locator(".selectize-input").nth(1).click()
+    page.get_by_text("grade").nth(1).click()
+
+    # Add a second column:
+    # page.get_by_label("blank").check()
+    # TODO: Test is flaky?
+    # expect(page.get_by_text("Weight")).to_have_count(2)
+    # TODO: Setting more inputs without checking for updates
+    # causes recalculations to pile up, and these cause timeouts on CI:
+    # It is still rerendering the graph after hitting "Download results".
+    # https://github.com/opendp/dp-wizard/issues/116
+
     # -- Download results --
-    download_results_button.click()
+    page.get_by_role("button", name="Download results").click()
     expect_not_visible(pick_dataset_text)
     expect_not_visible(perform_analysis_text)
     expect_visible(download_results_text)
     expect_no_error()
 
-    # Notebooks ...
-
-    # ... ipynb:
+    # Download Results:
+    # ... Notebooks:
+    # ...... ipynb:
     with page.expect_download() as notebook_download_info:
         page.get_by_text("Download notebook").first.click()
     expect_no_error()
@@ -154,7 +209,7 @@ def test_default_app(page: Page, default_app: ShinyAppProc):  # pragma: no cover
     notebook = notebook_download.path().read_text()
     assert "contributions = 42" in notebook
 
-    # ... html:
+    # ...... html:
     with page.expect_download() as html_download_info:
         page.get_by_text("Download HTML").first.click()
     expect_no_error()
@@ -163,7 +218,7 @@ def test_default_app(page: Page, default_app: ShinyAppProc):  # pragma: no cover
     html = html_download.path().read_text()
     assert "<!DOCTYPE html>" in html
 
-    # ... pdf:
+    # ...... pdf:
     with page.expect_download() as pdf_download_info:
         page.get_by_text("Download PDF").first.click()
     expect_no_error()
@@ -173,7 +228,6 @@ def test_default_app(page: Page, default_app: ShinyAppProc):  # pragma: no cover
     assert b"%PDF-1.4" in pdf
 
     # Reports ...
-
     # ... text:
     page.get_by_role("button", name="Reports").click()
     with page.expect_download() as text_report_download_info:
@@ -184,7 +238,7 @@ def test_default_app(page: Page, default_app: ShinyAppProc):  # pragma: no cover
     report = report_download.path().read_text()
     assert "confidence: 0.95" in report
 
-    # ... csv:
+    # ...... csv:
     with page.expect_download() as csv_report_download_info:
         page.get_by_text("Download table (.csv)").click()
     expect_no_error()
@@ -193,7 +247,38 @@ def test_default_app(page: Page, default_app: ShinyAppProc):  # pragma: no cover
     report = report_download.path().read_text()
     assert "outputs: grade: confidence,0.95" in report
 
-    # Script:
+    # Download Code:
+    # ... Unexecuted Notebooks:
+    # ...... ipynb:
+    page.get_by_text("Unexecuted Notebooks").click()
+    with page.expect_download() as notebook_download_info:
+        page.get_by_text("Download notebook (unexecuted)").click()
+    expect_no_error()
+
+    notebook_download = notebook_download_info.value
+    notebook = notebook_download.path().read_text()
+    assert "contributions = 42" in notebook
+
+    # ...... html:
+    with page.expect_download() as html_download_info:
+        page.get_by_text("Download HTML (unexecuted)").click()
+    expect_no_error()
+
+    html_download = html_download_info.value
+    html = html_download.path().read_text()
+    assert "<!DOCTYPE html>" in html
+
+    # ...... pdf:
+    with page.expect_download() as pdf_download_info:
+        page.get_by_text("Download PDF (unexecuted)").click()
+    expect_no_error()
+
+    pdf_download = pdf_download_info.value
+    pdf = pdf_download.path().read_bytes()
+    assert b"%PDF-1.4" in pdf
+
+    # ... Scripts:
+    # ...... py:
     page.get_by_text("Scripts").click()
     with page.expect_download() as script_download_info:
         page.get_by_text("Download script").click()
@@ -202,10 +287,3 @@ def test_default_app(page: Page, default_app: ShinyAppProc):  # pragma: no cover
     script_download = script_download_info.value
     script = script_download.path().read_text()
     assert "contributions = 42" in script
-
-    # -- Feedback --
-    page.get_by_text("Feedback").click()
-    iframe = page.locator("#feedback-iframe")
-    expect(iframe).to_be_visible()
-    expect(iframe.content_frame.get_by_text("DP Wizard Feedback")).to_be_visible()
-    # Text comes from iframe, so this does introduce a dependency on an outside service.
