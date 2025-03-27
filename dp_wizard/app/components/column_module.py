@@ -7,7 +7,7 @@ import polars as pl
 
 from dp_wizard.utils.code_generators.analyses import histogram, mean
 from dp_wizard.utils.dp_helper import make_accuracy_histogram
-from dp_wizard.utils.shared import plot_histogram
+from dp_wizard.utils.shared import plot_bars
 from dp_wizard.utils.code_generators import make_column_config_block
 from dp_wizard.app.components.outputs import (
     output_code_sample,
@@ -354,7 +354,7 @@ def column_server(
                 f"{contributions} contribution{s} / individual",
             ]
         )
-        return plot_histogram(
+        return plot_bars(
             histogram,
             error=accuracy,
             cutoff=0,  # TODO
