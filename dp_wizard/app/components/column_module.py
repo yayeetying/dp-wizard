@@ -5,7 +5,7 @@ from shiny import ui, render, module, reactive, Inputs, Outputs, Session
 from shiny.types import SilentException
 import polars as pl
 
-from dp_wizard.utils.code_generators.analyses import histogram, mean, median
+from dp_wizard.utils.code_generators.analyses import histogram, mean, median, count
 from dp_wizard.utils.dp_helper import make_accuracy_histogram
 from dp_wizard.utils.shared import plot_bars
 from dp_wizard.utils.code_generators import make_column_config_block
@@ -83,7 +83,7 @@ def column_ui():  # pragma: no cover
         ui.input_select(
             "analysis_type",
             None,
-            [histogram.name, mean.name, median.name],
+            [histogram.name, mean.name, median.name, count.name],
             width=label_width,
         ),
         ui.output_ui("analysis_config_ui"),
