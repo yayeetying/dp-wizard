@@ -42,10 +42,9 @@ class Analysis(Protocol):  # pragma: no cover
         bin_count: int,
     ) -> str: ...
 
-
 def get_analysis_by_name(name) -> Analysis:  # pragma: no cover
     # Avoid circular import:
-    from dp_wizard.utils.code_generators.analyses import histogram, mean, median
+    from dp_wizard.utils.code_generators.analyses import histogram, mean, median, count
 
     match name:
         case histogram.name:
@@ -54,5 +53,7 @@ def get_analysis_by_name(name) -> Analysis:  # pragma: no cover
             return mean
         case median.name:
             return median
+        case count.name:
+            return count
         case _:
             raise Exception("Unrecognized analysis")
