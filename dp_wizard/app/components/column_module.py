@@ -22,6 +22,13 @@ from dp_wizard.utils.mock_data import mock_data, ColumnDef
 default_analysis_type = histogram.name
 default_weight = "2"
 label_width = "10em"  # Just wide enough so the text isn't trucated.
+col_widths = {
+    # Controls stay roughly a constant width;
+    # Graph expands to fill space.
+    "sm": [4, 8],
+    "md": [3, 9],
+    "lg": [2, 10],
+}
 
 
 def get_float_error(number_str):
@@ -80,11 +87,15 @@ def error_md_ui(markdown):  # pragma: no cover
 def column_ui():  # pragma: no cover
     return ui.card(
         ui.card_header(ui.output_text("card_header")),
-        ui.input_select(
-            "analysis_type",
-            None,
-            [histogram.name, mean.name, median.name, count.name],
-            width=label_width,
+        ui.layout_columns(
+            ui.input_select(
+                "analysis_type",
+                None,
+                [histogram.name, mean.name, median.name, count.name],
+                width=label_width,
+            ),
+            ui.output_ui("analysis_info_ui"),
+            col_widths=col_widths,  # type: ignore
         ),
         ui.output_ui("analysis_config_ui"),
     )
@@ -190,6 +201,48 @@ def column_server(
         return name
 
     @render.ui
+    def analysis_info_ui():
+        match input.analysis_type():
+            case histogram.name:
+                return ui.markdown(
+                    """
+                    Choosing a smaller bin count will conserve your
+                    privacy budget and give you more accurate counts.
+                    While the bins are evenly spaced in DP Wizard,
+                    the OpenDP library lets you pick arbitrary cut points.
+                    """
+                )
+            case mean.name:
+                return ui.markdown(
+                    """
+                    Choosing tighter bounds will mean less noise added
+                    to the statistics, but if you pick bounds that
+                    are too tight, you'll miss the contributions of
+                    outliers.
+                    """
+                )
+            case median.name:
+                return ui.markdown(
+                    """
+                    In DP Wizard the median is picked from evenly spaced
+                    candidates, but the OpenDP library is more flexible.
+                    Because the median isn't based on the addition of noise,
+                    we can't estimate the error as we do with the other
+                    statistics.
+                    """
+                )
+            case count.name:
+                return ui.markdown(
+                    """
+                    Returns single private count of individuals with certain
+                    characteristics. Choosing bounds will result in counting
+                    only individuals within the bounds.
+                    """
+                )
+            case _:
+                raise Exception("Unrecognized analysis")
+
+    @render.ui
     def analysis_config_ui():
         col_widths = {
             # Controls stay roughly a constant width;
@@ -256,6 +309,17 @@ def column_server(
                             ui.output_ui("optional_weight_ui"),
                         ],
                         ui.output_ui("median_preview_ui"),
+                        col_widths=col_widths,  # type: ignore
+                    )
+            case count.name:
+                with reactive.isolate():
+                    return ui.layout_columns(
+                        [
+                            lower_bound_input(),
+                            upper_bound_input(),
+                            ui.output_ui("optional_weight_ui"),
+                        ],
+                        ui.output_ui("count_preview_ui"),
                         col_widths=col_widths,  # type: ignore
                     )
 
@@ -375,6 +439,22 @@ def column_server(
             ),
             output_code_sample("Column Definition", "column_code"),
         ]
+
+    @render.ui
+    def count_preview_ui():
+        # accuracy, histogram = accuracy_histogram()
+        if error_md := error_md_calc():
+            return error_md_ui(error_md)
+        else:
+            return [
+                ui.p(
+                    """
+                    Since the count is just a single number,
+                    there is not a preview visualization.
+                    """
+                ),
+                output_code_sample("Column Definition", "column_code"),
+            ]
 
     @render.data_frame
     def data_frame():

@@ -25,29 +25,30 @@ You can check your current version with `python --version`.
 The exact upgrade process will depend on your environment and operating system.
 
 ```
-usage: dp-wizard [-h] [--public_csv CSV] [--private_csv CSV] [--contrib CONTRIB] [--demo]
+usage: dp-wizard [-h] [--demo | --no_uploads]
 
 DP Wizard makes it easier to get started with Differential Privacy.
 
 options:
-  -h, --help         show this help message and exit
-  --public_csv CSV   Path to public CSV
-  --private_csv CSV  Path to private CSV
-  --contrib CONTRIB  How many rows can an individual contribute?
-  --demo             Use generated fake CSV for a quick demo
+  -h, --help    show this help message and exit
+  --demo        Use generated fake CSV for a quick demo
+  --no_uploads  Prompt for column names instead of CSV upload
 
-Use "--public_csv" if you have a public data set, and are curious how
+Unless you have set "--demo" or "--no_uploads", you will specify a CSV
+inside the application.
+
+Provide a "Public CSV" if you have a public data set, and are curious how
 DP can be applied: The preview visualizations will use your public data.
 
-Use "--private_csv" if you only have a private data set, and want to
+Provide a "Private CSV" if you only have a private data set, and want to
 make a release from it: The preview visualizations will only use
 simulated data, and apart from the headers, the private CSV is not
 read until the release.
 
-Use "--public_csv" and "--private_csv" together if you have two CSVs
-with the same structure. Perhaps the public CSV is older and no longer
-sensitive. Preview visualizations will be made with the public data,
-but the release will be made with private data.
+Provide both if you have two CSVs with the same structure.
+Perhaps the public CSV is older and no longer sensitive. Preview
+visualizations will be made with the public data, but the release will
+be made with private data.
 ```
 
 
@@ -169,3 +170,9 @@ graph TD
 - For `auto` transitions, some other action (for example, approving a PR) should trigger a [workflow](https://github.com/orgs/opendp/projects/10/workflows).
 - These are the only the states that matter. Whether PR is a draft or has assignees does not matter.
 - If we need anything more than this, we should consider a paid plan, so that we have access to more workflows.
+
+## Other resources
+
+2025-04-11: [Slides for 5 minute mini-talk on v0.3.0](https://docs.google.com/presentation/d/1g1c5ksG9sN8A_qWW9nFmFFZ6dSCkUAmL6_cUahi3VPA/edit#slide=id.g34c5f4bdc6a_0_0)
+
+2024-12-13: [Blog post for initial release](https://opendp.org/blog/dp-wizard-easy-way-get-started-differential-privacy-and-opendp)
