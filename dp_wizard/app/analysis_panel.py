@@ -1,6 +1,9 @@
 from math import pow
 from typing import Iterable, Any
 from pathlib import Path
+import matplotlib.pyplot as plt
+import numpy as np
+
 
 from htmltools import tags
 from shiny import ui, reactive, render, req, Inputs, Outputs, Session
@@ -60,6 +63,11 @@ def analysis_ui():
                 log_slider("log_epsilon_slider", 0.1, 10.0),
                 ui.output_ui("epsilon_ui"),
                 output_code_sample("Privacy Loss", "privacy_loss_python"),
+            ),
+            ui.card(
+                ui.card_header("Privacy-Utility Visualization"),
+                ui.output_plot("epsilon_visualization"),
+                ui.output_ui("epsilon_text_description"),
             ),
             ui.card(
                 ui.card_header("Simulation"),
@@ -266,3 +274,91 @@ def analysis_server(
             button,
             "Select one or more columns before proceeding.",
         ]
+
+    @render.plot
+    def epsilon_visualization():
+        # 1. build your ε grid + curves
+        epsilons = np.linspace(0.01, 10, 500)
+        accuracy = 1 - np.exp(-epsilons)  # your existing accuracy curve
+        risk = np.exp(-1 / epsilons)  # your existing risk curve
+
+        # 2. pull the reactive epsilon
+        eps = epsilon()
+
+        # 3. set up matplotlib with twin‐axes
+        fig, ax1 = plt.subplots()
+        ax2 = ax1.twinx()
+
+        # 4. plot curves
+        ax1.plot(epsilons, accuracy, color="tab:blue", label="Accuracy")
+        ax2.plot(epsilons, risk, color="tab:red", linestyle="--", label="Privacy Risk")
+
+        # 5. vertical dashed line on both axes
+        for ax in (ax1, ax2):
+            ax.axvline(eps, color="gray", linestyle="--", linewidth=1)
+
+        # 6. interpolate to find y‐values at ε
+        acc_at_eps = np.interp(eps, epsilons, accuracy)
+        risk_at_eps = np.interp(eps, epsilons, risk)
+
+        # 7. drop markers
+        ax1.scatter([eps], [acc_at_eps], color="tab:blue", zorder=5)
+        ax2.scatter([eps], [risk_at_eps], color="tab:red", zorder=5)
+
+        # 8. add text labels right next to each point
+        ax1.text(
+            eps,
+            acc_at_eps,
+            f"{acc_at_eps*100:.1f}%",
+            va="bottom",
+            ha="left",
+            fontsize=9,
+        )
+        ax2.text(
+            eps, risk_at_eps, f"{risk_at_eps:.2f}", va="bottom", ha="left", fontsize=9
+        )
+
+        # 9. label the ε value on the x‐axis
+        ax1.text(
+            eps,
+            ax1.get_ylim()[0],
+            f"ε = {eps:.2f}",
+            va="bottom",
+            ha="center",
+            fontsize=9,
+        )
+
+        # 10. styling
+        ax1.set_xlabel("Epsilon (ε)")
+        ax1.set_ylabel("Accuracy", color="tab:blue")
+        ax2.set_ylabel("Privacy Risk", color="tab:red")
+        ax1.tick_params(axis="y", labelcolor="tab:blue")
+        ax2.tick_params(axis="y", labelcolor="tab:red")
+        ax1.set_ylim(0, 1.05)
+        ax2.set_ylim(0, 1.05)
+
+        fig.tight_layout()
+        return fig
+
+    @render.ui
+    def epsilon_text_description():
+        current_epsilon = epsilon()
+
+        # Simulate descriptions based on current epsilon
+        if current_epsilon < 0.5:
+            desc = "Strong privacy protection, but data accuracy is very low."
+        elif current_epsilon < 2:
+            desc = "Moderate privacy protection with acceptable accuracy."
+        elif current_epsilon < 5:
+            desc = "Good accuracy, but some risk to privacy exists."
+        else:
+            desc = "High accuracy with significant risk of individual data leakage."
+
+        return ui.markdown(
+            f"""
+           **Current ε = {current_epsilon:.2f}**
+
+
+           {desc}
+           """
+        )
