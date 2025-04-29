@@ -5,7 +5,13 @@ from shiny import ui, render, module, reactive, Inputs, Outputs, Session
 from shiny.types import SilentException
 import polars as pl
 
-from dp_wizard.utils.code_generators.analyses import histogram, mean, median, count
+from dp_wizard.utils.code_generators.analyses import (
+    histogram,
+    mean,
+    median,
+    count,
+    stdeviation,
+)
 from dp_wizard.utils.dp_helper import make_accuracy_histogram
 from dp_wizard.utils.shared import plot_bars
 from dp_wizard.utils.code_generators import make_column_config_block
@@ -91,7 +97,7 @@ def column_ui():  # pragma: no cover
             ui.input_select(
                 "analysis_type",
                 None,
-                [histogram.name, mean.name, median.name, count.name],
+                [histogram.name, mean.name, median.name, count.name, stdeviation.name],
                 width=label_width,
             ),
             ui.output_ui("analysis_info_ui"),
@@ -239,6 +245,13 @@ def column_server(
                     only individuals within the bounds.
                     """
                 )
+            case stdeviation.name:
+                return ui.markdown(
+                    """
+                    Compute the variance of bounded data. Uses make_clamp
+                    to bound data and make_resize to establish dataset size.
+                    """
+                )
             case _:
                 raise Exception("Unrecognized analysis")
 
@@ -320,6 +333,17 @@ def column_server(
                             ui.output_ui("optional_weight_ui"),
                         ],
                         ui.output_ui("count_preview_ui"),
+                        col_widths=col_widths,  # type: ignore
+                    )
+            case stdeviation.name:
+                with reactive.isolate():
+                    return ui.layout_columns(
+                        [
+                            lower_bound_input(),
+                            upper_bound_input(),
+                            ui.output_ui("optional_weight_ui"),
+                        ],
+                        ui.output_ui("stdeviation_preview_ui"),
                         col_widths=col_widths,  # type: ignore
                     )
 
@@ -450,6 +474,22 @@ def column_server(
                 ui.p(
                     """
                     Since the count is just a single number,
+                    there is not a preview visualization.
+                    """
+                ),
+                output_code_sample("Column Definition", "column_code"),
+            ]
+
+    @render.ui
+    def stdeviation_preview_ui():
+        # accuracy, histogram = accuracy_histogram()
+        if error_md := error_md_calc():
+            return error_md_ui(error_md)
+        else:
+            return [
+                ui.p(
+                    """
+                    Since the standard deviation is just a single number,
                     there is not a preview visualization.
                     """
                 ),
