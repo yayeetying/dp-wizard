@@ -4,6 +4,8 @@ import random
 
 from shiny import App, ui, reactive, Inputs, Outputs, Session
 
+import shinyswatch
+
 from dp_wizard.utils.argparse_helpers import get_cli_info, CLIInfo
 from dp_wizard.utils.csv_helper import read_csv_names
 from dp_wizard.app import (
@@ -17,6 +19,37 @@ from dp_wizard.app import (
 
 app_ui = ui.page_bootstrap(
     ui.head_content(ui.include_css(Path(__file__).parent / "css" / "styles.css")),
+    ui.tags.link(
+        rel="stylesheet",
+        href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500&display=swap",
+    ),
+    ui.tags.style(
+        """
+        .app-header {
+            background: transparent;
+            padding: 2rem 1rem 1rem 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .header-emoji {
+            font-size: 2rem;
+            margin-right: 0.6rem;
+        }
+        .header-title {
+            color: white;
+            font-family: 'Poppins', sans-serif;
+            font-size: 2rem;
+            font-weight: 600;
+            text-align: center;
+        }
+        """
+    ),
+    ui.tags.div(
+        ui.tags.span("🪄", class_="header-emoji"),
+        ui.tags.span(ui.HTML("DP-Wizard <em>Enhanced</em>"), class_="header-title"),
+        class_="app-header",
+    ),
     ui.navset_tab(
         about_panel.about_ui(),
         dataset_panel.dataset_ui(),
@@ -26,7 +59,8 @@ app_ui = ui.page_bootstrap(
         selected=dataset_panel.dataset_panel_id,
         id="top_level_nav",
     ),
-    title="DP Wizard",
+    theme=shinyswatch.theme.darkly(),
+    title="DP Wizard Enhanced",
 )
 
 
