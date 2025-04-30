@@ -46,22 +46,51 @@ def df_to_columns(df: DataFrame):
     return transposed if transposed else (tuple(), tuple())
 
 
-def plot_bars(
-    df: DataFrame, error: float, cutoff: float, title: str
-):  # pragma: no cover
-    """
-    Given a Dataframe, make a bar plot of the data in the last column,
-    with labels from the prior columns.
-    """
-    import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
+from polars import DataFrame
+from matplotlib.colors import LinearSegmentedColormap
 
-    plt.rcParams["figure.figsize"] = (12, 4)
 
+def plot_bars(df: DataFrame, error: float, cutoff: float, title: str, epsilon: float):
+    """
+    Graph is blue when epsilon < 1 to show strong privacy
+    Then red to dark red for when epsilon is greater than 1 as there is less privacy
+    """
     bins, values = df_to_columns(df)
-    _figure, axes = plt.subplots()
-    bar_colors = ["blue" if v > cutoff else "lightblue" for v in values]
-    axes.bar(bins, values, color=bar_colors, yerr=error)
-    axes.set_xticks(bins, bins, rotation=45)
-    axes.axhline(cutoff, color="lightgrey", zorder=-1)
-    axes.set_ylim(bottom=0)
-    axes.set_title(title)
+    fig, ax = plt.subplots(figsize=(12, 4))
+
+    if epsilon <= 1:
+        bar_color = "blue"
+        # normalizes eps from 1 to 10 to 0 to 1
+        norm_eps = min((epsilon - 1) / 9, 1)
+        # blue gradient from dark to lighter
+        blue_map = LinearSegmentedColormap.from_list(
+            "blue_scale", ["#5b45ff", "#1e00ff"]
+        )
+        bar_color = blue_map(norm_eps)
+    else:
+        # normalizes eps from 1 to 10 to 0 to 1
+        norm_eps = min((epsilon - 1) / 9, 1)
+        # red goes from light to darker
+        red_map = LinearSegmentedColormap.from_list("red_scale", ["#f54747", "#8B0000"])
+        bar_color = red_map(norm_eps)
+
+    bars = ax.bar(
+        bins,
+        values,
+        color=bar_color,
+        yerr=error,
+        capsize=6,
+        edgecolor="black",
+        linewidth=1.2,
+        error_kw={"elinewidth": 2.5, "ecolor": "black"},
+    )
+
+    ax.axhline(cutoff, color="gray", linestyle="--", linewidth=1.2)
+    ax.set_xticks(range(len(bins)))
+    ax.set_xticklabels(bins, rotation=45, ha="right")
+    ax.set_ylim(bottom=0)
+    ax.set_title(title, fontsize=14, pad=12)
+
+    fig.tight_layout()
+    return fig
