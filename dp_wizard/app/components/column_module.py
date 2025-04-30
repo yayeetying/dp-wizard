@@ -116,6 +116,7 @@ def column_server(
     name: str,
     contributions: int,
     epsilon: float,
+    saved_epsilon: reactive.Value[float],
     row_count: int,
     analysis_types: reactive.Value[dict[str, str]],
     lower_bounds: reactive.Value[dict[str, float]],
@@ -125,6 +126,19 @@ def column_server(
     is_demo: bool,
     is_single_column: bool,
 ):  # pragma: no cover
+    def privacy_cost(query_type: str, epsilon: float) -> float:
+        match query_type:
+            case count.name:
+                return epsilon * 1.0
+            case mean.name:
+                return epsilon * 1.2
+            case median.name:
+                return epsilon * 1.5
+            case histogram.name:
+                return epsilon * 1.3
+            case stdeviation.name:
+                return epsilon * 2.5
+
     @reactive.effect
     def _set_hidden_inputs():
         # TODO: Is isolate still needed?
@@ -298,6 +312,7 @@ def column_server(
                             upper_bound_input(),
                             bin_count_input(),
                             ui.output_ui("optional_weight_ui"),
+                            ui.output_text("privacy_cost_text"),
                         ],
                         ui.output_ui("histogram_preview_ui"),
                         col_widths=col_widths,  # type: ignore
@@ -309,6 +324,7 @@ def column_server(
                             lower_bound_input(),
                             upper_bound_input(),
                             ui.output_ui("optional_weight_ui"),
+                            ui.output_text("privacy_cost_text"),
                         ],
                         ui.output_ui("mean_preview_ui"),
                         col_widths=col_widths,  # type: ignore
@@ -320,6 +336,7 @@ def column_server(
                             lower_bound_input(),
                             upper_bound_input(),
                             ui.output_ui("optional_weight_ui"),
+                            ui.output_text("privacy_cost_text"),
                         ],
                         ui.output_ui("median_preview_ui"),
                         col_widths=col_widths,  # type: ignore
@@ -331,6 +348,7 @@ def column_server(
                             lower_bound_input(),
                             upper_bound_input(),
                             ui.output_ui("optional_weight_ui"),
+                            ui.output_text("privacy_cost_text"),
                         ],
                         ui.output_ui("count_preview_ui"),
                         col_widths=col_widths,  # type: ignore
@@ -342,6 +360,7 @@ def column_server(
                             lower_bound_input(),
                             upper_bound_input(),
                             ui.output_ui("optional_weight_ui"),
+                            ui.output_text("privacy_cost_text"),
                         ],
                         ui.output_ui("stdeviation_preview_ui"),
                         col_widths=col_widths,  # type: ignore
@@ -517,3 +536,18 @@ def column_server(
             cutoff=0,  # TODO
             title=title,
         )
+
+    @render.text
+    def privacy_cost_text():
+        query_type = input.analysis_type()
+        confirmed_eps = saved_epsilon.get()
+        if query_type is None or confirmed_eps is None or confirmed_eps <= 0:
+            return "🔒 Awaiting confirmed epsilon and query type."
+
+        try:
+            cost = privacy_cost(query_type, confirmed_eps)
+            if cost is None or not isinstance(cost, (float, int)):
+                return "⚠️ Privacy cost not computable."
+            return f"🔒 Confirmed Privacy Cost for {query_type}: {cost:.3f} ε"
+        except Exception as e:
+            return f"⚠️ Error calculating cost: {e}"

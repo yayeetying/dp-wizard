@@ -70,6 +70,9 @@ def analysis_ui():
                 ),
                 log_slider("log_epsilon_slider", 0.1, 10.0),
                 ui.output_ui("epsilon_ui"),
+                ui.output_ui("budget_status_ui"),
+                ui.input_action_button("confirm_button", "Confirm Budget"),
+                ui.output_text("confirmed_epsilon_text"),
                 output_code_sample("Privacy Loss", "privacy_loss_python"),
             ),
             ui.card(
@@ -222,6 +225,7 @@ def analysis_server(
                 name=column_ids_to_names[column_id],
                 contributions=contributions(),
                 epsilon=epsilon(),
+                saved_epsilon=saved_epsilon,
                 row_count=int(input.row_count()),
                 analysis_types=analysis_types,
                 lower_bounds=lower_bounds,
@@ -369,3 +373,30 @@ def analysis_server(
            {desc}
            """
         )
+
+    @output
+    @render.ui
+    def budget_status_ui():
+        current_epsilon = epsilon()
+        if current_epsilon < 0.2:
+            return ui.markdown("**🔴 Budget is exhausted.**")
+        else:
+            return ui.markdown("")
+
+    saved_epsilon = reactive.Value(0.0)
+
+    # When user clicks "confirm", save the current slider value
+    @reactive.effect
+    @reactive.event(input.confirm_button)
+    def save_epsilon():
+        saved_epsilon.set(10 ** input.log_epsilon_slider())
+
+    # Display the saved epsilon
+    @output
+    @render.text
+    def confirmed_epsilon_text():
+        epsilon = saved_epsilon.get()
+        if epsilon is None:
+            return "No budget confirmed yet."
+        else:
+            return f"✅ Confirmed Epsilon: {epsilon:.3f}"
