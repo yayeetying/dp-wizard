@@ -297,7 +297,7 @@ def analysis_server(
         eps = epsilon()
 
         # 3. set up matplotlib with twin‐axes
-        fig, ax1 = plt.subplots()
+        fig, ax1 = plt.subplots(figsize=(4, 4))
         ax2 = ax1.twinx()
 
         # 4. plot curves
