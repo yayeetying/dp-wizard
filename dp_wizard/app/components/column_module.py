@@ -535,6 +535,7 @@ def column_server(
             error=accuracy,
             cutoff=0,  # TODO
             title=title,
+            epsilon=saved_epsilon.get()
         )
 
     @render.text
