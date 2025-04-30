@@ -6,6 +6,7 @@ import json
 import nbformat
 import nbconvert
 import jupytext
+import sys
 
 
 def _is_kernel_installed() -> bool:
@@ -34,8 +35,16 @@ def convert_py_to_nb(python_str: str, execute: bool = False):
     """
     with TemporaryDirectory() as temp_dir:
         if not _is_kernel_installed():
-            subprocess.run(  # pragma: no cover
-                "python -m ipykernel install --name kernel_name --user".split(" "),
+            subprocess.run(
+                [
+                    sys.executable,
+                    "-m",
+                    "ipykernel",
+                    "install",
+                    "--name",
+                    "kernel_name",
+                    "--user",
+                ],
                 check=True,
             )
 
@@ -43,7 +52,17 @@ def convert_py_to_nb(python_str: str, execute: bool = False):
         py_path = temp_dir_path / "input.py"
         py_path.write_text(python_str)
 
-        argv = "jupytext --from .py --to .ipynb --output -".split(" ")
+        argv = [
+            sys.executable,
+            "-m",
+            "jupytext",
+            "--from",
+            ".py",
+            "--to",
+            ".ipynb",
+            "--output",
+            "-",
+        ]
         if execute:
             argv.append("--execute")
         argv.append(str(py_path.absolute()))  # type: ignore
