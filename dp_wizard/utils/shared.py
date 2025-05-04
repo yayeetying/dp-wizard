@@ -51,7 +51,7 @@ from polars import DataFrame
 from matplotlib.colors import LinearSegmentedColormap
 
 
-def plot_bars(df: DataFrame, error: float, cutoff: float, title: str, epsilon: float):
+def plot_bars(df: DataFrame, error: float, cutoff: float, title: str, epsilon=1):
     """
     Graph is blue when epsilon < 1 to show strong privacy
     Then red to dark red for when epsilon is greater than 1 as there is less privacy

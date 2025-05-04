@@ -1,6 +1,6 @@
 # See the OpenDP docs for more on making private Standard Devation releases:
-# https://docs.opendp.org/en/stable/getting-started/tabular-data/essential-statistics.html#Mean
 
+"""
 from opendp.mod import enable_features
 from opendp.transformations import make_variance
 from opendp.measurements import make_laplace
@@ -9,6 +9,46 @@ from opendp.prelude import atom_domain, vector_domain
 import math
 
 enable_features("contrib")
+"""
+
+import polars as pl
+import pandas as pd
+import numpy as np
+
+
+def private_std(data):
+    data = np.clip(data, LOWER_BOUND, UPPER_BOUND)
+    mean = sum(data) / len(data)
+    squared_devs = [(x - mean) ** 2 for x in data]
+    stdeviation = sum(squared_devs) / len(data)
+    return stdeviation
+
+
+# arr = np.array(pl.col(COLUMN_NAME).cast(float).fill_nan(0).fill_null(0).to_numpy())
+
+EXPR_NAME = (
+    pl.col(COLUMN_NAME)
+    .cast(float)
+    .fill_nan(0)
+    .fill_null(0)
+    .dp.mean((LOWER_BOUND, UPPER_BOUND))
+    .alias("standard_deviation")
+)
+
+"""
+import polars as pl
+
+EXPR_NAME = (
+    pl.col(COLUMN_NAME)
+      .cast(float)
+      .fill_nan(0.0)
+      .fill_null(0.0)
+      .clip(LOWER_BOUND, UPPER_BOUND)
+      .dp.mean((LOWER_BOUND, UPPER_BOUND))
+      # .std(ddof=0)
+      .alias("private_standard_deviation")
+)
+"""
 
 """
 def dp_var(data, lower, upper, size=100, epsilon=1):
