@@ -56,10 +56,6 @@ def make_column_config_block(column_name, lower_bound, upper_bound, bin_count):
         .fill_expressions(
             EXPR_NAME=f"{snake_name}_expr",
         )
-        .fill_values(
-            COLUMN_NAME=column_name,
-            LOWER_BOUND=lower_bound,
-            UPPER_BOUND=upper_bound,
-        )
+        .fill_values(COLUMN_NAME=column_name)
         .finish()
     )
