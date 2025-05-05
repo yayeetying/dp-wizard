@@ -4,5 +4,7 @@ QUERY_NAME = (
     if groups
     else context.query().select(EXPR_NAME)
 )
+
+print(QUERY_NAME)  # A LazyFrameQuery
 STATS_NAME = QUERY_NAME.release().collect()
-STATS_NAME
+# print(STATS_NAME)
