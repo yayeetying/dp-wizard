@@ -17,7 +17,6 @@ from dp_wizard.utils.converters import (
     convert_nb_to_pdf,
 )
 
-
 wait_message = "Please wait."
 
 
