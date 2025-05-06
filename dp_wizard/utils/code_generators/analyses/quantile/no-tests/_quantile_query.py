@@ -7,4 +7,3 @@ QUERY_NAME = (
 
 print(QUERY_NAME)  # A LazyFrameQuery
 STATS_NAME = QUERY_NAME.release().collect()
-# print(STATS_NAME)

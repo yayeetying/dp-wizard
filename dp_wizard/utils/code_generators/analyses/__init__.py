@@ -50,7 +50,7 @@ def get_analysis_by_name(name) -> Analysis:  # pragma: no cover
         mean,
         median,
         count,
-        stdeviation,
+        quantile,
     )
 
     match name:
@@ -62,7 +62,7 @@ def get_analysis_by_name(name) -> Analysis:  # pragma: no cover
             return median
         case count.name:
             return count
-        case stdeviation.name:
-            return stdeviation
+        case quantile.name:
+            return quantile
         case _:
             raise Exception("Unrecognized analysis")

@@ -1,5 +1,5 @@
 print(
-    f"DP Standard Deviation for COLUMN_NAME "
+    f"DP Quantile for COLUMN_NAME "
     f"assuming {contributions} contributions per individual"
 )
 
