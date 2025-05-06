@@ -10,7 +10,7 @@ from dp_wizard.utils.code_generators.analyses import (
     mean,
     median,
     count,
-    stdeviation,
+    quantile,
 )
 from dp_wizard.utils.dp_helper import make_accuracy_histogram
 from dp_wizard.utils.shared import plot_bars
@@ -97,7 +97,7 @@ def column_ui():  # pragma: no cover
             ui.input_select(
                 "analysis_type",
                 None,
-                [histogram.name, mean.name, median.name, count.name, stdeviation.name],
+                [histogram.name, mean.name, median.name, count.name, quantile.name],
                 width=label_width,
             ),
             ui.output_ui("analysis_info_ui"),
@@ -136,7 +136,7 @@ def column_server(
                 return epsilon * 1.5
             case histogram.name:
                 return epsilon * 1.3
-            case stdeviation.name:
+            case quantile.name:
                 return epsilon * 2.5
 
     @reactive.effect
@@ -259,7 +259,7 @@ def column_server(
                     only individuals within the bounds.
                     """
                 )
-            case stdeviation.name:
+            case quantile.name:
                 return ui.markdown(
                     """
                     Compute the variance of bounded data. Uses make_clamp
@@ -353,7 +353,7 @@ def column_server(
                         ui.output_ui("count_preview_ui"),
                         col_widths=col_widths,  # type: ignore
                     )
-            case stdeviation.name:
+            case quantile.name:
                 with reactive.isolate():
                     return ui.layout_columns(
                         [
@@ -362,7 +362,7 @@ def column_server(
                             ui.output_ui("optional_weight_ui"),
                             ui.output_text("privacy_cost_text"),
                         ],
-                        ui.output_ui("stdeviation_preview_ui"),
+                        ui.output_ui("quantile_preview_ui"),
                         col_widths=col_widths,  # type: ignore
                     )
 
@@ -500,7 +500,7 @@ def column_server(
             ]
 
     @render.ui
-    def stdeviation_preview_ui():
+    def quantile_preview_ui():
         # accuracy, histogram = accuracy_histogram()
         if error_md := error_md_calc():
             return error_md_ui(error_md)
@@ -508,7 +508,7 @@ def column_server(
             return [
                 ui.p(
                     """
-                    Since the standard deviation is just a single number,
+                    Since the quantile is just a single number,
                     there is not a preview visualization.
                     """
                 ),
@@ -535,7 +535,7 @@ def column_server(
             error=accuracy,
             cutoff=0,  # TODO
             title=title,
-            epsilon=saved_epsilon.get()
+            epsilon=saved_epsilon.get(),
         )
 
     @render.text
