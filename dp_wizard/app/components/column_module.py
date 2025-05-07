@@ -116,7 +116,6 @@ def column_server(
     name: str,
     contributions: int,
     epsilon: float,
-    saved_epsilon: reactive.Value[float],
     row_count: int,
     analysis_types: reactive.Value[dict[str, str]],
     lower_bounds: reactive.Value[dict[str, float]],
@@ -126,18 +125,6 @@ def column_server(
     is_demo: bool,
     is_single_column: bool,
 ):  # pragma: no cover
-    def privacy_cost(query_type: str, epsilon: float) -> float:
-        match query_type:
-            case count.name:
-                return epsilon * 1.0
-            case mean.name:
-                return epsilon * 1.2
-            case median.name:
-                return epsilon * 1.5
-            case histogram.name:
-                return epsilon * 1.3
-            case quantile.name:
-                return epsilon * 2.5
 
     @reactive.effect
     def _set_hidden_inputs():
@@ -535,20 +522,5 @@ def column_server(
             error=accuracy,
             cutoff=0,  # TODO
             title=title,
-            epsilon=saved_epsilon.get(),
+            # epsilon=saved_epsilon.get(),
         )
-
-    @render.text
-    def privacy_cost_text():
-        query_type = input.analysis_type()
-        confirmed_eps = saved_epsilon.get()
-        if query_type is None or confirmed_eps is None or confirmed_eps <= 0:
-            return "🔒 Awaiting confirmed epsilon and query type."
-
-        try:
-            cost = privacy_cost(query_type, confirmed_eps)
-            if cost is None or not isinstance(cost, (float, int)):
-                return "⚠️ Privacy cost not computable."
-            return f"🔒 Confirmed Privacy Cost for {query_type}: {cost:.3f} ε"
-        except Exception as e:
-            return f"⚠️ Error calculating cost: {e}"

@@ -57,6 +57,15 @@ def analysis_ui():
             ),
             ui.card(
                 ui.card_header("Privacy Budget"),
+                ui.input_numeric(
+                    "total_budget_input",
+                    "Enter Total Budget (ε)",
+                    value=1.0,
+                    min=0.01,
+                    max=100.0,
+                    step=0.01,
+                ),
+                ui.output_text("remaining_budget_text"),
                 ui.markdown(
                     """
                     What is your privacy budget for this release?
@@ -400,3 +409,11 @@ def analysis_server(
             return "No budget confirmed yet."
         else:
             return f"✅ Confirmed Epsilon: {epsilon:.3f}"
+
+    @output
+    @render.text
+    def remaining_budget_text():
+        total = input.total_budget_input()
+        confirmed = saved_epsilon.get()
+        remaining = total - confirmed
+        return f"🔒 Remaining Budget: {remaining:.3f}"
