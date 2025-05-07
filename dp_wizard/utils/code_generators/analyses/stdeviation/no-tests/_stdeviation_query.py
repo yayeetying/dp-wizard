@@ -40,6 +40,7 @@ var = (
     .item()
 )
 print(np.sqrt(var))
+STATS_NAME = np.sqrt(var)
 
 """
 groups = GROUP_NAMES
