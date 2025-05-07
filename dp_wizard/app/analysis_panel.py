@@ -288,35 +288,50 @@ def analysis_server(
 
     @render.plot
     def epsilon_visualization():
-        # 1. build your ε grid + curves
-        epsilons = np.linspace(0.01, 10, 500)
-        accuracy = 1 - np.exp(-epsilons)  # your existing accuracy curve
-        risk = np.exp(-1 / epsilons)  # your existing risk curve
+        # Prior adversary success probability (50%)
+        base_risk = 0.5
 
-        # 2. pull the reactive epsilon
+        # Build ε grid and curves
+        epsilons = np.linspace(0.01, 10, 500)
+        accuracy = 1 - np.exp(-epsilons)
+        dp_risk = (np.exp(epsilons) * base_risk) / (
+            np.exp(epsilons) * base_risk + (1 - base_risk)
+        )
+
+        # Current ε from slider
         eps = epsilon()
 
-        # 3. set up matplotlib with twin‐axes
-        fig, ax1 = plt.subplots(figsize=(4, 4))
+        # Set up twin axes
+        fig, ax1 = plt.subplots()
         ax2 = ax1.twinx()
 
-        # 4. plot curves
-        ax1.plot(epsilons, accuracy, color="tab:blue", label="Accuracy")
-        ax2.plot(epsilons, risk, color="tab:red", linestyle="--", label="Privacy Risk")
+        # Use log scale on x-axis for better spread at low ε
+        ax1.set_xscale("log")
+        ax1.set_xlim(epsilons[0], epsilons[-1])
 
-        # 5. vertical dashed line on both axes
+        # Plot
+        ax1.plot(epsilons, accuracy, color="tab:blue", label="Accuracy")
+        ax2.plot(
+            epsilons,
+            dp_risk,
+            color="tab:red",
+            linestyle="--",
+            label=f"Max Adversary Success (p₀={base_risk:.1f})",
+        )
+
+        # Vertical guide line
         for ax in (ax1, ax2):
             ax.axvline(eps, color="gray", linestyle="--", linewidth=1)
 
-        # 6. interpolate to find y‐values at ε
+        # Compute & mark points at ε
         acc_at_eps = np.interp(eps, epsilons, accuracy)
-        risk_at_eps = np.interp(eps, epsilons, risk)
-
-        # 7. drop markers
+        risk_at_eps = (np.exp(eps) * base_risk) / (
+            np.exp(eps) * base_risk + (1 - base_risk)
+        )
         ax1.scatter([eps], [acc_at_eps], color="tab:blue", zorder=5)
         ax2.scatter([eps], [risk_at_eps], color="tab:red", zorder=5)
 
-        # 8. add text labels right next to each point
+        # Label as percentages
         ax1.text(
             eps,
             acc_at_eps,
@@ -326,10 +341,15 @@ def analysis_server(
             fontsize=9,
         )
         ax2.text(
-            eps, risk_at_eps, f"{risk_at_eps:.2f}", va="bottom", ha="left", fontsize=9
+            eps,
+            risk_at_eps,
+            f"{risk_at_eps*100:.1f}%",
+            va="bottom",
+            ha="left",
+            fontsize=9,
         )
 
-        # 9. label the ε value on the x‐axis
+        # Annotate ε on x-axis
         ax1.text(
             eps,
             ax1.get_ylim()[0],
@@ -339,64 +359,59 @@ def analysis_server(
             fontsize=9,
         )
 
-        # 10. styling
+        # Axis labels
         ax1.set_xlabel("Epsilon (ε)")
-        ax1.set_ylabel("Accuracy", color="tab:blue")
-        ax2.set_ylabel("Privacy Risk", color="tab:red")
+        ax1.set_ylabel("Accuracy*", color="tab:blue")
+        ax2.set_ylabel("Privacy Risk*", color="tab:red")
         ax1.tick_params(axis="y", labelcolor="tab:blue")
         ax2.tick_params(axis="y", labelcolor="tab:red")
         ax1.set_ylim(0, 1.05)
         ax2.set_ylim(0, 1.05)
 
+        # Combine legends and place at bottom
+        lines1, labels1 = ax1.get_legend_handles_labels()
+        lines2, labels2 = ax2.get_legend_handles_labels()
+        fig.legend(
+            lines1 + lines2,
+            labels1 + labels2,
+            loc="lower center",
+            ncol=2,
+            bbox_to_anchor=(0.5, -0.2),
+        )
+        fig.subplots_adjust(bottom=0.25)
         fig.tight_layout()
         return fig
 
     @render.ui
     def epsilon_text_description():
-        current_epsilon = epsilon()
+        eps_val = epsilon()
+        acc = (1 - np.exp(-eps_val)) * 100
+        risk = (np.exp(eps_val) * 0.5) / (np.exp(eps_val) * 0.5 + 0.5) * 100
 
-        # Simulate descriptions based on current epsilon
-        if current_epsilon < 0.5:
-            desc = "Strong privacy protection, but data accuracy is very low."
-        elif current_epsilon < 2:
-            desc = "Moderate privacy protection with acceptable accuracy."
-        elif current_epsilon < 5:
-            desc = "Good accuracy, but some risk to privacy exists."
+        # Determine bottom-line summary
+        if acc < 50 and risk < 60:
+            bottom = "Strong privacy protection, but data accuracy is very low."
+        elif acc < 50 and risk >= 60:
+            bottom = "Privacy remains strong, but the results may not be very accurate."
+        elif acc < 80 and risk < 60:
+            bottom = "Moderate accuracy with strong privacy protection."
+        elif acc < 80 and risk >= 60:
+            bottom = "Moderate privacy protection with acceptable accuracy."
+        elif acc < 95 and risk < 80:
+            bottom = "Good accuracy with some privacy risk."
         else:
-            desc = "High accuracy with significant risk of individual data leakage."
+            bottom = "High accuracy with significant risk of individual data leakage."
 
         return ui.markdown(
             f"""
-           **Current ε = {current_epsilon:.2f}**
+**Current ε = {eps_val:.2f}**
 
+- At this setting, your *noisy result* will lie within ±1 unit of the true value about **{acc:.1f}% of the time**.
+- An adversary with no prior knowledge (50% guess-rate) can at most raise their success to **{risk:.1f}%** after seeing your DP output.
 
-           {desc}
-           """
+**Bottom line:** {bottom}
+
+> ⚠️ **Note:* There is no universally accepted definition for accuracy or privacy risk metrics; these values are ballpark estimates.
+Here, "accuracy" is modeled from the standard deviation of a Laplace model, and "privacy risk" is modeled using the adversary-success probability bound from Franzen et al. (2024), DOI: 10.1145/3637309.
+"""
         )
-
-    @output
-    @render.ui
-    def budget_status_ui():
-        current_epsilon = epsilon()
-        if current_epsilon < 0.2:
-            return ui.markdown("**🔴 Budget is exhausted.**")
-        else:
-            return ui.markdown("")
-
-    saved_epsilon = reactive.Value(0.0)
-
-    # When user clicks "confirm", save the current slider value
-    @reactive.effect
-    @reactive.event(input.confirm_button)
-    def save_epsilon():
-        saved_epsilon.set(10 ** input.log_epsilon_slider())
-
-    # Display the saved epsilon
-    @output
-    @render.text
-    def confirmed_epsilon_text():
-        epsilon = saved_epsilon.get()
-        if epsilon is None:
-            return "No budget confirmed yet."
-        else:
-            return f"✅ Confirmed Epsilon: {epsilon:.3f}"
