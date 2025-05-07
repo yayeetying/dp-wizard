@@ -23,7 +23,7 @@ mean = (
     .item()
 )
 
-print(mean)
+print(f"Mean: {mean}")
 
 var = (
     dp.Context.compositor(
@@ -39,16 +39,17 @@ var = (
     .collect()
     .item()
 )
-print(np.sqrt(var))
-STATS_NAME = np.sqrt(var)
+
+std = np.sqrt(var)
+
+print(f"Standard Deviation: {std}")
 
 """
-groups = GROUP_NAMES
 QUERY_NAME = (
     context.query().group_by(groups).agg(EXPR_NAME)
     if groups
     else context.query().select(EXPR_NAME)
 )
-STATS_NAME = QUERY_NAME.release().collect()
-STATS_NAME
 """
+
+STATS_NAME = std

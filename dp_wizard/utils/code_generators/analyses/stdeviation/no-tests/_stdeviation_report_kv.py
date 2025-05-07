@@ -1,7 +1,3 @@
 NAME: {
-    "stdeviation": (
-        dict(zip(*df_to_columns(IDENTIFIER_STATS)))
-        if groups
-        else IDENTIFIER_STATS.item()
-    ),
+    "stdeviation": (IDENTIFIER_STATS.item()),
 }

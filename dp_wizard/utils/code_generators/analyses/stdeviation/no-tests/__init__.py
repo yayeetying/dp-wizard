@@ -11,9 +11,6 @@ def has_bins():
 def make_query(code_gen, identifier, accuracy_name, stats_name):
     return (
         Template("stdeviation_query", __file__)
-        .fill_values(
-            GROUP_NAMES=code_gen.groups,
-        )
         .fill_expressions(
             QUERY_NAME=f"{identifier}_query",
             STATS_NAME=stats_name,
