@@ -429,7 +429,7 @@ Here, "accuracy" is modeled from the standard deviation of a Laplace model, and 
     @render.ui
     def budget_status_ui():
         current_epsilon = epsilon()
-        if current_epsilon < 0.2:
+        if current_epsilon > input.total_budget_input():
             return ui.markdown("**🔴 Budget is exhausted.**")
         else:
             return ui.markdown("")
