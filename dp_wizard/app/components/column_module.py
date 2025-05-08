@@ -313,7 +313,7 @@ def column_server(
                             upper_bound_input(),
                             bin_count_input(),
                             ui.output_ui("optional_weight_ui"),
-                            ui.output_text("privacy_cost_text"),
+                            # ui.output_text("privacy_cost_text"),
                         ],
                         ui.output_ui("histogram_preview_ui"),
                         col_widths=col_widths,  # type: ignore
@@ -325,7 +325,7 @@ def column_server(
                             lower_bound_input(),
                             upper_bound_input(),
                             ui.output_ui("optional_weight_ui"),
-                            ui.output_text("privacy_cost_text"),
+                            # ui.output_text("privacy_cost_text"),
                         ],
                         ui.output_ui("mean_preview_ui"),
                         col_widths=col_widths,  # type: ignore
@@ -337,7 +337,7 @@ def column_server(
                             lower_bound_input(),
                             upper_bound_input(),
                             ui.output_ui("optional_weight_ui"),
-                            ui.output_text("privacy_cost_text"),
+                            # ui.output_text("privacy_cost_text"),
                         ],
                         ui.output_ui("median_preview_ui"),
                         col_widths=col_widths,  # type: ignore
@@ -349,7 +349,7 @@ def column_server(
                             lower_bound_input(),
                             upper_bound_input(),
                             ui.output_ui("optional_weight_ui"),
-                            ui.output_text("privacy_cost_text"),
+                            # ui.output_text("privacy_cost_text"),
                         ],
                         ui.output_ui("count_preview_ui"),
                         col_widths=col_widths,  # type: ignore
@@ -361,7 +361,7 @@ def column_server(
                             lower_bound_input(),
                             upper_bound_input(),
                             ui.output_ui("optional_weight_ui"),
-                            ui.output_text("privacy_cost_text"),
+                            # ui.output_text("privacy_cost_text"),
                         ],
                         ui.output_ui("quantile_preview_ui"),
                         col_widths=col_widths,  # type: ignore
@@ -373,7 +373,7 @@ def column_server(
                             lower_bound_input(),
                             upper_bound_input(),
                             ui.output_ui("optional_weight_ui"),
-                            ui.output_text("privacy_cost_text"),
+                            # ui.output_text("privacy_cost_text"),
                         ],
                         ui.output_ui("stdeviation_preview_ui"),
                         col_widths=col_widths,  # type: ignore

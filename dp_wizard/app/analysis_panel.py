@@ -234,7 +234,7 @@ def analysis_server(
                 name=column_ids_to_names[column_id],
                 contributions=contributions(),
                 epsilon=epsilon(),
-                saved_epsilon=saved_epsilon,
+                # saved_epsilon=saved_epsilon,
                 row_count=int(input.row_count()),
                 analysis_types=analysis_types,
                 lower_bounds=lower_bounds,
